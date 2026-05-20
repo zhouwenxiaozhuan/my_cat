@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="喵记 - 治愈系动画日记，陪伴你记录每一天的心情" />
+    <meta name="theme-color" content="#e8a87c" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <title>喵记 - 治愈系动画日记</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app">
+
+      <!-- TOP NAVIGATION BAR -->
+      <header class="app-header">
+        <div class="header-inner">
+          <div class="header-logo">
+            <span class="logo-icon">🐱</span>
+            <span class="logo-text">喵记</span>
+          </div>
+          <nav class="header-nav" aria-label="主导航">
+            <button class="nav-btn active" data-view="editor" aria-label="写日记">
+              <span class="nav-icon">✏️</span>
+              <span class="nav-label">写日记</span>
+            </button>
+            <button class="nav-btn" data-view="list" aria-label="历史记录">
+              <span class="nav-icon">📖</span>
+              <span class="nav-label">历史记录</span>
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <main class="app-main">
+
+        <!-- EDITOR SECTION -->
+        <section id="editor-section" class="view-section active" aria-label="日记编辑区">
+          <div class="editor-wrap">
+            <div class="editor-card">
+
+              <!-- Date display -->
+              <div class="editor-header">
+                <div class="editor-date">
+                  <span class="date-icon">📅</span>
+                  <span id="today-date" class="date-text"></span>
+                </div>
+              </div>
+
+              <!-- Title input -->
+              <div class="input-group">
+                <label for="diary-title" class="input-label">日记标题</label>
+                <input
+                  type="text"
+                  id="diary-title"
+                  class="diary-title-input"
+                  placeholder="请输入日记标题"
+                  maxlength="50"
+                  aria-label="日记标题"
+                  autofocus
+                />
+                <div class="title-counter">
+                  <span id="title-count">0</span> / 50
+                </div>
+              </div>
+
+              <!-- Content textarea -->
+              <div class="input-group textarea-group">
+                <label for="diary-content" class="input-label">日记正文</label>
+                <textarea
+                  id="diary-content"
+                  class="diary-content-input"
+                  placeholder="记录今天的心情吧～"
+                  rows="12"
+                  aria-label="日记正文"
+                ></textarea>
+              </div>
+
+              <!-- Action buttons -->
+              <div class="editor-actions">
+                <button id="btn-clear" class="btn btn-ghost" type="button" aria-label="清空内容">
+                  清空内容
+                </button>
+                <button id="btn-save" class="btn btn-primary" type="button" aria-label="保存日记">
+                  保存日记
+                </button>
+              </div>
+
+              <!-- Save feedback toast -->
+              <div id="save-toast" class="save-toast" aria-live="polite" role="status"></div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- DIARY LIST SECTION -->
+        <section id="list-section" class="view-section" aria-label="历史日记列表" hidden>
+          <div class="diary-list-wrap">
+
+            <!-- Section title -->
+            <div class="list-header">
+              <h2 class="list-title">历史日记</h2>
+              <span class="list-count" id="total-count">0 篇</span>
+            </div>
+
+            <!-- Search bar -->
+            <div class="list-toolbar">
+              <div class="search-wrap">
+                <span class="search-icon">🔍</span>
+                <input
+                  type="search"
+                  id="search-input"
+                  class="search-input"
+                  placeholder="搜索日记..."
+                  aria-label="搜索日记"
+                />
+              </div>
+            </div>
+
+            <!-- Diary entries -->
+            <div id="diary-list" class="diary-list" role="list" aria-label="日记列表"></div>
+
+            <!-- Empty state -->
+            <div id="empty-state" class="empty-state" hidden>
+              <div class="empty-icon">📝</div>
+              <p class="empty-text">还没有写日记哦，开始记录吧～</p>
+              <button class="btn btn-primary" data-view="editor">开始写日记</button>
+            </div>
+
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- VIRTUAL CAT — fixed bottom-right, z-index: 10 -->
+    <div id="cat-animation" aria-label="虚拟猫咪" role="img">
+      <div class="cat-wrapper">
+        <div id="cat-svg-container" class="cat-svg-container"></div>
+        <button id="cat-interact-btn" class="cat-interact-btn" aria-label="和猫咪互动" title="点我！"></button>
+      </div>
+    </div>
+
+    <!-- SPEECH BUBBLE — fixed near cat, z-index: 15 -->
+    <div id="bubble" class="bubble" aria-live="polite" role="status" hidden>
+      <div class="bubble-content">
+        <span id="bubble-text"></span>
+      </div>
+      <div class="bubble-tail"></div>
+    </div>
+
+    <!-- DIARY DETAIL MODAL -->
+    <div id="diary-modal" class="modal-overlay" hidden role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <span id="modal-date" class="modal-date"></span>
+          <button id="modal-close" class="modal-close" aria-label="关闭">✕</button>
+        </div>
+        <h2 id="modal-title" class="modal-title"></h2>
+        <div id="modal-content" class="modal-content"></div>
+      </div>
+    </div>
+
+    <!-- DELETE CONFIRM DIALOG -->
+    <div id="confirm-dialog" class="modal-overlay" hidden role="alertdialog" aria-modal="true">
+      <div class="modal-card confirm-card">
+        <h3 class="confirm-title">确认删除</h3>
+        <p class="confirm-text">删除后无法恢复，确定要删除这篇日记吗？</p>
+        <div class="confirm-actions">
+          <button id="confirm-cancel" class="btn btn-ghost">取消</button>
+          <button id="confirm-ok" class="btn btn-danger">确认删除</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
