@@ -183,6 +183,42 @@ const CAT_SVG = {
 function renderCat(catState = 'idle') {
   const svg = CAT_SVG[catState] || CAT_SVG.idle;
   dom.catSvg.innerHTML = svg;
+
+  // Remove animation classes
+  dom.catSvg.parentElement.classList.remove('cat-happy', 'cat-sad', 'cat-listening');
+}
+
+/**
+ * Trigger cat animation state
+ * @param {string} animationType - 'happy', 'sad', 'listening'
+ * @param {number} duration - Duration in ms before returning to idle (default 2000)
+ */
+function triggerCatAnimation(animationType, duration = 2000) {
+  const catWrapper = dom.catSvg.parentElement;
+
+  // Remove existing animations
+  catWrapper.classList.remove('cat-happy', 'cat-sad', 'cat-listening');
+
+  // Trigger reflow to restart animation
+  void catWrapper.offsetWidth;
+
+  // Add animation class
+  if (animationType === 'happy') {
+    catWrapper.classList.add('cat-happy');
+    renderCat('happy');
+  } else if (animationType === 'sad') {
+    catWrapper.classList.add('cat-sad');
+    renderCat('idle');
+  } else if (animationType === 'listening') {
+    catWrapper.classList.add('cat-listening');
+    renderCat('idle');
+  }
+
+  // Return to idle after duration
+  setTimeout(() => {
+    catWrapper.classList.remove('cat-happy', 'cat-sad', 'cat-listening');
+    renderCat('idle');
+  }, duration);
 }
 
 /* =========================================================
@@ -294,6 +330,7 @@ function saveDiaries(diaries) {
 function onTitleInput() {
   const len = dom.diaryTitle.value.length;
   dom.titleCount.textContent = len;
+  triggerCatAnimation('listening', 1200);
 }
 
 /** 清空编辑器内容 */
@@ -329,9 +366,8 @@ function onSave() {
   saveDiaries(state.diaries);
 
   showToast('日记保存成功 🐱', 'success');
-  renderCat('happy');
+  triggerCatAnimation('happy', 2500);
   showBubble(pickMessage('save'));
-  setTimeout(() => renderCat('idle'), 2500);
 
   clearEditor();
 }
@@ -445,9 +481,8 @@ function confirmDelete() {
   renderList();
 
   showListToast('日记已删除', 'success');
-  renderCat('happy');
+  triggerCatAnimation('sad', 2500);
   showBubble(pickMessage('delete'));
-  setTimeout(() => renderCat('idle'), 2500);
 }
 
 /** 取消删除 */
@@ -513,6 +548,11 @@ function bindEvents() {
 
   // 标题输入计数
   dom.diaryTitle.addEventListener('input', onTitleInput);
+
+  // 内容输入 — 触发倾听动画
+  dom.diaryContent.addEventListener('input', () => {
+    triggerCatAnimation('listening', 1200);
+  });
 
   // 保存按钮 + Ctrl/Cmd+S
   dom.btnSave.addEventListener('click', onSave);

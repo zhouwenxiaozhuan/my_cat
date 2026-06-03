@@ -3,8 +3,11 @@
    ========================================================= */
 
 :root {
-  --bg: #f8f5f2;
+  --bg: #faf8f5;
+  --bg-gradient: linear-gradient(135deg, #faf8f5 0%, #f5f0eb 100%);
   --card: #ffffff;
+  --card-shadow: 0 4px 20px rgba(232, 168, 124, 0.08);
+  --card-shadow-hover: 0 8px 30px rgba(232, 168, 124, 0.12);
   --text: #555555;
   --text-light: #999999;
   --text-strong: #333333;
@@ -22,12 +25,13 @@
   --radius-sm: 8px;
   --radius-lg: 20px;
   --radius-pill: 100px;
-  --shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.12);
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.1);
   --font-sans: 'Noto Sans SC', system-ui, -apple-system, sans-serif;
   --font-serif: 'Noto Serif SC', Georgia, serif;
   --transition: 0.2s ease;
+  --transition-slow: 0.3s ease;
 }
 
 * {
@@ -47,7 +51,7 @@ body {
   font-weight: 400;
   line-height: 1.6;
   color: var(--text);
-  background-color: var(--bg);
+  background: var(--bg-gradient);
   min-height: 100vh;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -175,11 +179,16 @@ input, textarea, select {
 .editor-card {
   background: var(--card);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: 32px;
+  box-shadow: var(--card-shadow);
+  padding: 36px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 28px;
+  transition: box-shadow var(--transition-slow);
+}
+
+.editor-card:hover {
+  box-shadow: var(--card-shadow-hover);
 }
 
 .editor-header {
@@ -221,15 +230,15 @@ input, textarea, select {
 
 .diary-title-input {
   width: 100%;
-  padding: 14px 16px;
-  border: 1.5px solid var(--neutral-300);
+  padding: 16px 18px;
+  border: 2px solid var(--neutral-300);
   border-radius: var(--radius);
   font-family: var(--font-serif);
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-strong);
   background: var(--neutral-100);
-  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  transition: all var(--transition-slow);
 }
 
 .diary-title-input::placeholder {
@@ -241,7 +250,8 @@ input, textarea, select {
 .diary-title-input:focus {
   border-color: var(--main);
   background: var(--card);
-  box-shadow: 0 0 0 3px rgba(232, 168, 124, 0.15);
+  box-shadow: 0 0 0 4px rgba(232, 168, 124, 0.1);
+  transform: translateY(-1px);
 }
 
 .title-counter {
@@ -257,14 +267,14 @@ input, textarea, select {
 
 .diary-content-input {
   width: 100%;
-  padding: 14px 16px;
-  border: 1.5px solid var(--neutral-300);
+  padding: 16px 18px;
+  border: 2px solid var(--neutral-300);
   border-radius: var(--radius);
   font-size: 0.95rem;
   line-height: 1.8;
   color: var(--text);
   background: var(--neutral-100);
-  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  transition: all var(--transition-slow);
   min-height: 240px;
 }
 
@@ -275,7 +285,8 @@ input, textarea, select {
 .diary-content-input:focus {
   border-color: var(--main);
   background: var(--card);
-  box-shadow: 0 0 0 3px rgba(232, 168, 124, 0.15);
+  box-shadow: 0 0 0 4px rgba(232, 168, 124, 0.1);
+  transform: translateY(-1px);
 }
 
 /* Action buttons */
@@ -291,28 +302,46 @@ input, textarea, select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   padding: 12px 28px;
   border-radius: var(--radius-pill);
   font-size: 0.9rem;
   font-weight: 500;
-  transition: background var(--transition), color var(--transition),
-              transform var(--transition), box-shadow var(--transition);
+  transition: transform var(--transition), box-shadow var(--transition-slow), background var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: left var(--transition);
+  z-index: -1;
+}
+
+.btn:hover::before {
+  left: 100%;
 }
 
 .btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 .btn-primary {
-  background: var(--main);
+  background: linear-gradient(135deg, var(--main) 0%, var(--main-dark) 100%);
   color: white;
-  box-shadow: 0 2px 8px rgba(232, 168, 124, 0.4);
+  box-shadow: var(--card-shadow);
 }
 
 .btn-primary:hover {
-  background: var(--main-dark);
-  box-shadow: 0 4px 14px rgba(232, 168, 124, 0.5);
+  background: linear-gradient(135deg, var(--main-dark) 0%, #c47a5a 100%);
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
 }
 
 .btn-ghost {
@@ -324,17 +353,21 @@ input, textarea, select {
 .btn-ghost:hover {
   background: var(--neutral-300);
   color: var(--text-strong);
+  transform: translateY(-1px);
 }
 
 .btn-danger {
-  background: #fff0f0;
+  background: linear-gradient(135deg, #fff0f0 0%, #ffe8e8 100%);
   color: var(--error);
   border: 1.5px solid rgba(232, 124, 124, 0.3);
+  transition: all var(--transition-slow);
 }
 
 .btn-danger:hover {
-  background: var(--error);
+  background: linear-gradient(135deg, var(--error) 0%, #d66868 100%);
   color: white;
+  border-color: transparent;
+  transform: translateY(-2px);
 }
 
 /* Save toast */
@@ -437,7 +470,7 @@ input, textarea, select {
   border-radius: var(--radius);
   padding: 20px 24px;
   box-shadow: var(--shadow);
-  transition: transform var(--transition), box-shadow var(--transition);
+  transition: all var(--transition-slow);
   border-left: 3px solid transparent;
   animation: entryIn 0.3s ease;
 }
@@ -448,8 +481,8 @@ input, textarea, select {
 }
 
 .diary-entry:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  box-shadow: var(--card-shadow);
   border-left-color: var(--main);
 }
 
@@ -588,25 +621,71 @@ input, textarea, select {
   bottom: 24px;
   right: 24px;
   z-index: 10;
-  pointer-events: none;
 }
 
 .cat-wrapper {
   position: relative;
-  width: 100px;
-  height: 100px;
+  width: 120px;
+  height: 120px;
+  animation: catFloat 3s ease-in-out infinite;
 }
 
 .cat-svg-container {
-  width: 100px;
-  height: 100px;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(243, 212, 183, 0.3) 0%, rgba(243, 212, 183, 0.1) 100%);
+  border-radius: 50%;
+  box-shadow: 0 4px 20px rgba(232, 168, 124, 0.2);
+  transition: all var(--transition-slow);
 }
 
 .cat-svg-container svg {
-  width: 100%;
-  height: 100%;
+  width: 90px;
+  height: 90px;
+}
+
+/* Floating idle animation */
+@keyframes catFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Happy animation state */
+.cat-wrapper.cat-happy {
+  animation: catBounce 0.6s ease-in-out;
+}
+
+@keyframes catBounce {
+  0%, 100% { transform: scale(1) translateY(0); }
+  25% { transform: scale(1.05) translateY(-12px); }
+  75% { transform: scale(0.95) translateY(4px); }
+}
+
+/* Sad animation state */
+.cat-wrapper.cat-sad {
+  animation: catSlump 0.5s ease-out;
+}
+
+@keyframes catSlump {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(-2deg); }
+  100% { transform: translateY(2px) rotate(0deg); }
+}
+
+/* Listening animation state */
+.cat-wrapper.cat-listening {
+  animation: catListen 0.8s ease-in-out;
+}
+
+@keyframes catListen {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-6px); }
+  75% { transform: translateY(0); }
 }
 
 .cat-interact-btn {
@@ -616,6 +695,17 @@ input, textarea, select {
   background: transparent;
   pointer-events: all;
   cursor: pointer;
+  transition: transform var(--transition);
+  border: none;
+  padding: 0;
+}
+
+.cat-interact-btn:hover {
+  transform: scale(1.1);
+}
+
+.cat-interact-btn:active {
+  transform: scale(0.95);
 }
 
 /* ===== SPEECH BUBBLE ===== */
