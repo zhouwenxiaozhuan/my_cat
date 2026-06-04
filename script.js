@@ -69,28 +69,42 @@ const CAT_MESSAGES = {
     '写日记的你最可爱了！',
     '喵喵喵～',
     '记录生活的每一个瞬间吧～',
+    '今天也要加油哦！',
   ],
   save: [
-    '太棒了！日记保存成功喵～',
+    '写得真好！每一篇都很珍贵～',
+    '太棒了！你真的很厉害喵！',
     '又记录了美好的一天！',
+    '这篇日记一定会成为美好的回忆！',
     '喵！你真的很努力呢！',
-    '每一篇日记都很珍贵哦！',
   ],
   delete: [
-    '好吧，已经帮你删掉了喵...',
-    '删掉的日记去了另一个世界...',
+    '没关系～删掉的故事还在心里呢！',
+    '好吧，帮你好好收藏到另一个世界了喵...',
+    '放下也是一种勇气喵～',
+    '喵，要保重哦～',
+  ],
+  listening: [
+    '继续加油！喵在认真听呢～',
+    '写得越来越好了！',
+    '喵在认真看你写哦～',
+    '今天发生了什么有趣的事吗？',
+    '慢慢写，不着急～',
   ],
   interact: [
     '喵！你摸了我！',
     '呜呜～好舒服！',
     '再来一下！',
     '喵喵喵喵喵！',
+    '你是最好的主人！',
   ],
 };
 
 let state = {
   diaries: [],
   bubbleTimer: null,
+  // Debounce timer for listening animation (avoid triggering on every keystroke)
+  listenDebounce: null,
 };
 
 /* =========================================================
@@ -183,41 +197,42 @@ const CAT_SVG = {
 function renderCat(catState = 'idle') {
   const svg = CAT_SVG[catState] || CAT_SVG.idle;
   dom.catSvg.innerHTML = svg;
-
-  // Remove animation classes
   dom.catSvg.parentElement.classList.remove('cat-happy', 'cat-sad', 'cat-listening');
 }
 
 /**
- * Trigger cat animation state
- * @param {string} animationType - 'happy', 'sad', 'listening'
- * @param {number} duration - Duration in ms before returning to idle (default 2000)
+ * Trigger a cat animation + show matching bubble message simultaneously.
+ * Uses a guard so rapid calls restart cleanly without stacking timers.
+ * @param {'happy'|'sad'|'listening'} type
+ * @param {number} duration ms before returning to idle
  */
-function triggerCatAnimation(animationType, duration = 2000) {
-  const catWrapper = dom.catSvg.parentElement;
+function triggerCatAnimation(type, duration = 2000) {
+  const wrapper = dom.catSvg.parentElement;
 
-  // Remove existing animations
-  catWrapper.classList.remove('cat-happy', 'cat-sad', 'cat-listening');
+  // Clear any pending return-to-idle
+  if (state.animReturnTimer) {
+    clearTimeout(state.animReturnTimer);
+  }
 
-  // Trigger reflow to restart animation
-  void catWrapper.offsetWidth;
+  // Remove all state classes and force reflow to restart CSS animation
+  wrapper.classList.remove('cat-happy', 'cat-sad', 'cat-listening');
+  void wrapper.offsetWidth;
 
-  // Add animation class
-  if (animationType === 'happy') {
-    catWrapper.classList.add('cat-happy');
+  if (type === 'happy') {
+    wrapper.classList.add('cat-happy');
     renderCat('happy');
-  } else if (animationType === 'sad') {
-    catWrapper.classList.add('cat-sad');
+  } else if (type === 'sad') {
+    wrapper.classList.add('cat-sad');
     renderCat('idle');
-  } else if (animationType === 'listening') {
-    catWrapper.classList.add('cat-listening');
+  } else if (type === 'listening') {
+    wrapper.classList.add('cat-listening');
     renderCat('idle');
   }
 
-  // Return to idle after duration
-  setTimeout(() => {
-    catWrapper.classList.remove('cat-happy', 'cat-sad', 'cat-listening');
+  state.animReturnTimer = setTimeout(() => {
+    wrapper.classList.remove('cat-happy', 'cat-sad', 'cat-listening');
     renderCat('idle');
+    state.animReturnTimer = null;
   }, duration);
 }
 
@@ -255,15 +270,34 @@ function escapeHtml(str) {
 }
 
 /* =========================================================
-   6. SPEECH BUBBLE
+   6. SPEECH BUBBLE — transition-based show/hide
    ========================================================= */
+
+/**
+ * Show the speech bubble with a message.
+ * Uses CSS class toggle instead of `hidden` so the fade-in transition fires.
+ * @param {string} message - Text to display
+ * @param {number} duration - Auto-hide delay in ms (default 3500)
+ */
 function showBubble(message, duration = 3500) {
   clearTimeout(state.bubbleTimer);
+
   dom.bubbleText.textContent = message;
-  dom.bubble.hidden = false;
-  state.bubbleTimer = setTimeout(() => {
-    dom.bubble.hidden = true;
-  }, duration);
+  // Remove hidden attribute if present (first-ever show), then add visible class
+  dom.bubble.removeAttribute('hidden');
+
+  // Small rAF delay lets the browser paint the element before transitioning in
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      dom.bubble.classList.add('bubble-visible');
+    });
+  });
+
+  state.bubbleTimer = setTimeout(() => hideBubble(), duration);
+}
+
+function hideBubble() {
+  dom.bubble.classList.remove('bubble-visible');
 }
 
 /* =========================================================
@@ -330,7 +364,16 @@ function saveDiaries(diaries) {
 function onTitleInput() {
   const len = dom.diaryTitle.value.length;
   dom.titleCount.textContent = len;
-  triggerCatAnimation('listening', 1200);
+  onContentTyping();
+}
+
+/** 内容输入事件 — 统一处理倾听动画，debounce 避免每个键盘事件都触发 */
+function onContentTyping() {
+  clearTimeout(state.listenDebounce);
+  state.listenDebounce = setTimeout(() => {
+    triggerCatAnimation('listening', 1800);
+    showBubble(pickMessage('listening'), 2000);
+  }, 600);
 }
 
 /** 清空编辑器内容 */
@@ -350,7 +393,7 @@ function onSave() {
 
   if (!content) {
     showToast('请先写点内容再保存吧～', 'error');
-    showBubble('喵？好像还没写内容哦！');
+    showBubble('喵？好像还没写内容哦！', 3000);
     dom.diaryContent.focus();
     return;
   }
@@ -367,7 +410,7 @@ function onSave() {
 
   showToast('日记保存成功 🐱', 'success');
   triggerCatAnimation('happy', 2500);
-  showBubble(pickMessage('save'));
+  showBubble(pickMessage('save'), 2800);
 
   clearEditor();
 }
@@ -456,7 +499,7 @@ function closeModal() {
 }
 
 /* =========================================================
-   14. DELETE DIARY — 删除日记及确认对话框
+   14. DELETE DIARY — slide-out animation, then remove from storage
    ========================================================= */
 
 let pendingDeleteId = null;
@@ -468,21 +511,46 @@ function promptDelete(id) {
   dom.confirmOk.focus();
 }
 
-/** 确认删除 — 从 localStorage 移除并刷新列表 */
+/**
+ * 确认删除：
+ * 1. 找到对应的 DOM 元素
+ * 2. 添加 .entry-removing 触发向右滑出动画（0.45s）
+ * 3. 动画结束后再从 state 和 localStorage 删除，刷新列表
+ */
 function confirmDelete() {
   if (!pendingDeleteId) return;
 
-  state.diaries = state.diaries.filter(d => d.id !== pendingDeleteId);
-  saveDiaries(state.diaries);
+  const idToDelete = pendingDeleteId;
   pendingDeleteId = null;
 
   dom.confirmDialog.hidden = true;
   closeModal();
-  renderList();
 
-  showListToast('日记已删除', 'success');
+  // Find the DOM element for this entry
+  const el = dom.diaryList.querySelector(`[data-id="${idToDelete}"]`);
+
+  // Trigger cat + bubble immediately so feedback is instant
   triggerCatAnimation('sad', 2500);
-  showBubble(pickMessage('delete'));
+  showBubble(pickMessage('delete'), 2800);
+
+  if (el) {
+    // Add animation class — CSS handles the slide + fade
+    el.classList.add('entry-removing');
+
+    // Wait for animation to finish before touching data
+    el.addEventListener('animationend', () => {
+      state.diaries = state.diaries.filter(d => d.id !== idToDelete);
+      saveDiaries(state.diaries);
+      renderList();
+      showListToast('日记已删除', 'success');
+    }, { once: true });
+  } else {
+    // Fallback: element not visible (e.g. filtered out), delete immediately
+    state.diaries = state.diaries.filter(d => d.id !== idToDelete);
+    saveDiaries(state.diaries);
+    renderList();
+    showListToast('日记已删除', 'success');
+  }
 }
 
 /** 取消删除 */
@@ -516,9 +584,8 @@ function switchView(view) {
    16. CAT INTERACTION
    ========================================================= */
 function onCatInteract() {
-  renderCat('happy');
-  showBubble(pickMessage('interact'), 2500);
-  setTimeout(() => renderCat('idle'), 2000);
+  triggerCatAnimation('happy', 2000);
+  showBubble(pickMessage('interact'), 2200);
 }
 
 /* =========================================================
@@ -526,7 +593,7 @@ function onCatInteract() {
    ========================================================= */
 function startIdleMessages() {
   setInterval(() => {
-    if (dom.bubble.hidden) {
+    if (!dom.bubble.classList.contains('bubble-visible')) {
       showBubble(pickMessage('idle'), 4000);
     }
   }, 30000);
@@ -546,13 +613,11 @@ function bindEvents() {
     if (e.target.dataset.view) switchView(e.target.dataset.view);
   });
 
-  // 标题输入计数
+  // 标题输入 — 字数计数 + 倾听动画
   dom.diaryTitle.addEventListener('input', onTitleInput);
 
-  // 内容输入 — 触发倾听动画
-  dom.diaryContent.addEventListener('input', () => {
-    triggerCatAnimation('listening', 1200);
-  });
+  // 内容输入 — 倾听动画（debounced）
+  dom.diaryContent.addEventListener('input', onContentTyping);
 
   // 保存按钮 + Ctrl/Cmd+S
   dom.btnSave.addEventListener('click', onSave);
@@ -566,7 +631,7 @@ function bindEvents() {
   // 清空按钮
   dom.btnClear.addEventListener('click', () => {
     clearEditor();
-    showBubble('喵～重新开始写吧！');
+    showBubble('喵～重新开始写吧！', 2500);
   });
 
   // 搜索输入
@@ -629,7 +694,7 @@ function init() {
   // 绑定所有事件
   bindEvents();
 
-  // 欢迎气泡
+  // 欢迎气泡 — 根据时间选择问候语
   const hour = new Date().getHours();
   let greeting;
   if (hour < 6)        greeting = '深夜还不睡吗？喵～';

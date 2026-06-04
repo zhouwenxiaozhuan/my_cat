@@ -486,6 +486,18 @@ input, textarea, select {
   border-left-color: var(--main);
 }
 
+/* Slide-out animation when deleting */
+.diary-entry.entry-removing {
+  animation: entrySlideOut 0.45s cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes entrySlideOut {
+  0%   { opacity: 1; transform: translateX(0); max-height: 200px; margin-bottom: 12px; }
+  60%  { opacity: 0; transform: translateX(60px); }
+  100% { opacity: 0; transform: translateX(80px); max-height: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
+}
+
 .entry-header {
   display: flex;
   align-items: flex-start;
@@ -709,19 +721,24 @@ input, textarea, select {
 }
 
 /* ===== SPEECH BUBBLE ===== */
+/* ===== SPEECH BUBBLE ===== */
 #bubble {
   position: fixed;
-  bottom: 130px;
-  right: 24px;
-  z-index: 15;
-  max-width: 200px;
+  bottom: 155px;
+  right: 20px;
+  z-index: 20;
+  max-width: 210px;
   pointer-events: none;
-  animation: bubbleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* transition-based visibility — never use [hidden] for this element */
+  opacity: 0;
+  transform: scale(0.75) translateY(10px);
+  transform-origin: bottom right;
+  transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes bubbleIn {
-  from { opacity: 0; transform: scale(0.7) translateY(10px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+#bubble.bubble-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
 }
 
 .bubble-content {
@@ -736,10 +753,10 @@ input, textarea, select {
 }
 
 .bubble-tail {
-  width: 14px;
+  width: 16px;
   height: 10px;
   margin-left: auto;
-  margin-right: 28px;
+  margin-right: 30px;
   position: relative;
 }
 
@@ -748,8 +765,8 @@ input, textarea, select {
   position: absolute;
   top: 0;
   right: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
   border-top: 10px solid var(--light);
 }
 
@@ -757,9 +774,9 @@ input, textarea, select {
   content: '';
   position: absolute;
   top: -2px;
-  right: 1px;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
+  right: 1.5px;
+  border-left: 6.5px solid transparent;
+  border-right: 6.5px solid transparent;
   border-top: 9px solid var(--card);
 }
 
@@ -912,9 +929,9 @@ input, textarea, select {
   }
 
   #bubble {
-    max-width: 160px;
-    right: 16px;
-    bottom: 120px;
+    max-width: 170px;
+    right: 12px;
+    bottom: 140px;
   }
 
   #cat-animation {
