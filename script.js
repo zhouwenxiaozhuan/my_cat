@@ -6,16 +6,9 @@
    1. LOCAL STORAGE UTILITY — 完整的数据持久化管理
    ========================================================= */
 const Storage = {
-  /**
-   * 保存数据到 localStorage
-   * @param {string} key - 存储键
-   * @param {*} data - 要保存的数据
-   * @returns {boolean} 是否保存成功
-   */
   saveData(key, data) {
     try {
-      const json = JSON.stringify(data);
-      localStorage.setItem(key, json);
+      localStorage.setItem(key, JSON.stringify(data));
       return true;
     } catch (e) {
       console.error(`[Storage.saveData] 保存失败，键: ${key}`, e);
@@ -23,29 +16,17 @@ const Storage = {
     }
   },
 
-  /**
-   * 从 localStorage 读取数据
-   * @param {string} key - 存储键
-   * @param {*} defaultValue - 默认值（读取失败时返回）
-   * @returns {*} 读取到的数据，或默认值
-   */
   loadData(key, defaultValue = null) {
     try {
       const raw = localStorage.getItem(key);
       if (raw === null || raw === undefined) return defaultValue;
-      const parsed = JSON.parse(raw);
-      return parsed;
+      return JSON.parse(raw);
     } catch (e) {
       console.error(`[Storage.loadData] 读取失败，键: ${key}`, e);
       return defaultValue;
     }
   },
 
-  /**
-   * 删除指定键的数据
-   * @param {string} key - 存储键
-   * @returns {boolean} 是否删除成功
-   */
   removeData(key) {
     try {
       localStorage.removeItem(key);
@@ -103,8 +84,10 @@ const CAT_MESSAGES = {
 let state = {
   diaries: [],
   bubbleTimer: null,
-  // Debounce timer for listening animation (avoid triggering on every keystroke)
   listenDebounce: null,
+  animReturnTimer: null,
+  isSaving: false,
+  isDeleting: false,
 };
 
 /* =========================================================
@@ -146,7 +129,7 @@ const dom = {
    ========================================================= */
 const CAT_SVG = {
   idle: `
-    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 4px 8px rgba(0,0,0,0.12))">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="50" cy="68" rx="28" ry="22" fill="#f5dbb0"/>
       <circle cx="50" cy="42" r="24" fill="#f5dbb0"/>
       <polygon points="28,24 22,8 38,18" fill="#f5dbb0"/>
@@ -170,7 +153,7 @@ const CAT_SVG = {
     </svg>`,
 
   happy: `
-    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 4px 8px rgba(0,0,0,0.12))">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="50" cy="68" rx="28" ry="22" fill="#f5dbb0"/>
       <circle cx="50" cy="42" r="24" fill="#f5dbb0"/>
       <polygon points="28,24 22,8 38,18" fill="#f5dbb0"/>
@@ -200,23 +183,14 @@ function renderCat(catState = 'idle') {
   dom.catSvg.parentElement.classList.remove('cat-happy', 'cat-sad', 'cat-listening');
 }
 
-/**
- * Trigger a cat animation + show matching bubble message simultaneously.
- * Uses a guard so rapid calls restart cleanly without stacking timers.
- * @param {'happy'|'sad'|'listening'} type
- * @param {number} duration ms before returning to idle
- */
+/** Trigger cat animation with guard against stacking */
 function triggerCatAnimation(type, duration = 2000) {
   const wrapper = dom.catSvg.parentElement;
 
-  // Clear any pending return-to-idle
-  if (state.animReturnTimer) {
-    clearTimeout(state.animReturnTimer);
-  }
+  if (state.animReturnTimer) clearTimeout(state.animReturnTimer);
 
-  // Remove all state classes and force reflow to restart CSS animation
   wrapper.classList.remove('cat-happy', 'cat-sad', 'cat-listening');
-  void wrapper.offsetWidth;
+  void wrapper.offsetWidth; // force reflow to restart CSS animation
 
   if (type === 'happy') {
     wrapper.classList.add('cat-happy');
@@ -240,29 +214,20 @@ function triggerCatAnimation(type, duration = 2000) {
    5. UTILITY FUNCTIONS
    ========================================================= */
 
-/** 生成唯一 ID */
 function generateDiaryId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
-/** 获取完整的日期时间字符串（YYYY-MM-DD HH:mm 格式）*/
 function getDateTime() {
   const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const h = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  return `${y}-${m}-${day} ${h}:${min}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-/** 从消息组中随机选一条 */
 function pickMessage(category) {
   const msgs = CAT_MESSAGES[category] || CAT_MESSAGES.idle;
   return msgs[Math.floor(Math.random() * msgs.length)];
 }
 
-/** HTML 转义 */
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
@@ -273,20 +238,11 @@ function escapeHtml(str) {
    6. SPEECH BUBBLE — transition-based show/hide
    ========================================================= */
 
-/**
- * Show the speech bubble with a message.
- * Uses CSS class toggle instead of `hidden` so the fade-in transition fires.
- * @param {string} message - Text to display
- * @param {number} duration - Auto-hide delay in ms (default 3500)
- */
 function showBubble(message, duration = 3500) {
   clearTimeout(state.bubbleTimer);
-
   dom.bubbleText.textContent = message;
-  // Remove hidden attribute if present (first-ever show), then add visible class
   dom.bubble.removeAttribute('hidden');
 
-  // Small rAF delay lets the browser paint the element before transitioning in
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       dom.bubble.classList.add('bubble-visible');
@@ -310,7 +266,6 @@ function showToast(msg, type = 'success') {
   setTimeout(() => dom.saveToast.classList.remove('show'), 2800);
 }
 
-/** 列表区域专用 toast（在列表顶部显示） */
 function showListToast(msg, type = 'success') {
   let toast = document.getElementById('list-toast');
   if (!toast) {
@@ -331,18 +286,13 @@ function showListToast(msg, type = 'success') {
 function initEditorDate() {
   const d = new Date();
   const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const w = weekdays[d.getDay()];
-  dom.todayDate.textContent = `${y}年${m}月${day}日 周${w}`;
+  dom.todayDate.textContent = `${d.getFullYear()}年${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}日 周${weekdays[d.getDay()]}`;
 }
 
 /* =========================================================
    9. DIARY DATA MANAGEMENT
    ========================================================= */
 
-/** 加载所有日记（从 localStorage 读取 diaryList） */
 function loadDiaries() {
   const data = Storage.loadData(DIARY_STORAGE_KEY, []);
   if (!Array.isArray(data)) return [];
@@ -351,7 +301,6 @@ function loadDiaries() {
   );
 }
 
-/** 保存所有日记到 localStorage */
 function saveDiaries(diaries) {
   Storage.saveData(DIARY_STORAGE_KEY, diaries);
 }
@@ -360,14 +309,13 @@ function saveDiaries(diaries) {
    10. EDITOR INPUT EVENTS
    ========================================================= */
 
-/** 标题输入事件 */
 function onTitleInput() {
   const len = dom.diaryTitle.value.length;
   dom.titleCount.textContent = len;
   onContentTyping();
 }
 
-/** 内容输入事件 — 统一处理倾听动画，debounce 避免每个键盘事件都触发 */
+/** Debounced typing handler — triggers cat listening animation */
 function onContentTyping() {
   clearTimeout(state.listenDebounce);
   state.listenDebounce = setTimeout(() => {
@@ -376,7 +324,6 @@ function onContentTyping() {
   }, 600);
 }
 
-/** 清空编辑器内容 */
 function clearEditor() {
   dom.diaryTitle.value = '';
   dom.diaryContent.value = '';
@@ -385,9 +332,10 @@ function clearEditor() {
 }
 
 /* =========================================================
-   11. SAVE DIARY
+   11. SAVE DIARY — with double-submit guard
    ========================================================= */
 function onSave() {
+  if (state.isSaving) return; // prevent double-submit
   const title = dom.diaryTitle.value.trim();
   const content = dom.diaryContent.value.trim();
 
@@ -397,6 +345,9 @@ function onSave() {
     dom.diaryContent.focus();
     return;
   }
+
+  state.isSaving = true;
+  dom.btnSave.disabled = true;
 
   const diary = {
     id: generateDiaryId(),
@@ -413,17 +364,22 @@ function onSave() {
   showBubble(pickMessage('save'), 2800);
 
   clearEditor();
+
+  // Re-enable after a short delay
+  setTimeout(() => {
+    state.isSaving = false;
+    dom.btnSave.disabled = false;
+  }, 500);
 }
 
 /* =========================================================
-   12. DIARY LIST RENDERING — 历史日记列表
+   12. DIARY LIST RENDERING
    ========================================================= */
 
-/** 获取过滤后的日记列表（按创建时间倒序） */
 function getFilteredDiaries() {
   let list = [...state.diaries];
-  if (dom.searchInput.value.trim()) {
-    const q = dom.searchInput.value.toLowerCase();
+  const q = dom.searchInput.value.trim().toLowerCase();
+  if (q) {
     list = list.filter(d =>
       d.title.toLowerCase().includes(q) ||
       d.content.toLowerCase().includes(q)
@@ -432,11 +388,9 @@ function getFilteredDiaries() {
   return list;
 }
 
-/** 渲染日记列表 — 每条包含标题、时间、查看和删除按钮 */
 function renderList() {
   const list = getFilteredDiaries();
   dom.totalCount.textContent = `${state.diaries.length} 篇`;
-
   dom.diaryList.innerHTML = '';
 
   if (!list.length) {
@@ -475,10 +429,9 @@ function renderList() {
 }
 
 /* =========================================================
-   13. VIEW DIARY DETAIL — 查看日记详情模态框
+   13. VIEW DIARY DETAIL
    ========================================================= */
 
-/** 打开日记详情模态框 */
 function openModal(id) {
   const entry = state.diaries.find(d => d.id === id);
   if (!entry) return;
@@ -492,33 +445,30 @@ function openModal(id) {
   dom.modalClose.focus();
 }
 
-/** 关闭模态框 */
 function closeModal() {
   dom.diaryModal.hidden = true;
   document.body.style.overflow = '';
 }
 
 /* =========================================================
-   14. DELETE DIARY — slide-out animation, then remove from storage
+   14. DELETE DIARY — slide-out animation, then remove
    ========================================================= */
 
 let pendingDeleteId = null;
 
-/** 弹出删除确认对话框 */
 function promptDelete(id) {
+  if (state.isDeleting) return; // prevent double-delete
   pendingDeleteId = id;
   dom.confirmDialog.hidden = false;
   dom.confirmOk.focus();
 }
 
-/**
- * 确认删除：
- * 1. 找到对应的 DOM 元素
- * 2. 添加 .entry-removing 触发向右滑出动画（0.45s）
- * 3. 动画结束后再从 state 和 localStorage 删除，刷新列表
- */
+/** Confirm delete — play slide-out, then remove from storage */
 function confirmDelete() {
-  if (!pendingDeleteId) return;
+  if (!pendingDeleteId || state.isDeleting) return;
+
+  state.isDeleting = true;
+  dom.confirmOk.disabled = true;
 
   const idToDelete = pendingDeleteId;
   pendingDeleteId = null;
@@ -526,34 +476,43 @@ function confirmDelete() {
   dom.confirmDialog.hidden = true;
   closeModal();
 
-  // Find the DOM element for this entry
-  const el = dom.diaryList.querySelector(`[data-id="${idToDelete}"]`);
-
-  // Trigger cat + bubble immediately so feedback is instant
   triggerCatAnimation('sad', 2500);
   showBubble(pickMessage('delete'), 2800);
 
-  if (el) {
-    // Add animation class — CSS handles the slide + fade
-    el.classList.add('entry-removing');
+  const el = dom.diaryList.querySelector(`[data-id="${idToDelete}"]`);
 
-    // Wait for animation to finish before touching data
+  if (el) {
+    el.classList.add('entry-removing');
     el.addEventListener('animationend', () => {
       state.diaries = state.diaries.filter(d => d.id !== idToDelete);
       saveDiaries(state.diaries);
       renderList();
       showListToast('日记已删除', 'success');
+      state.isDeleting = false;
+      dom.confirmOk.disabled = false;
     }, { once: true });
+
+    // Safety timeout in case animationend doesn't fire (e.g. reduced-motion)
+    setTimeout(() => {
+      if (state.isDeleting) {
+        state.diaries = state.diaries.filter(d => d.id !== idToDelete);
+        saveDiaries(state.diaries);
+        renderList();
+        showListToast('日记已删除', 'success');
+        state.isDeleting = false;
+        dom.confirmOk.disabled = false;
+      }
+    }, 600);
   } else {
-    // Fallback: element not visible (e.g. filtered out), delete immediately
     state.diaries = state.diaries.filter(d => d.id !== idToDelete);
     saveDiaries(state.diaries);
     renderList();
     showListToast('日记已删除', 'success');
+    state.isDeleting = false;
+    dom.confirmOk.disabled = false;
   }
 }
 
-/** 取消删除 */
 function cancelDelete() {
   pendingDeleteId = null;
   dom.confirmDialog.hidden = true;
@@ -600,7 +559,7 @@ function startIdleMessages() {
 }
 
 /* =========================================================
-   18. EVENT BINDING
+   18. EVENT BINDING — with touch optimization
    ========================================================= */
 function bindEvents() {
   // 导航按钮
@@ -608,18 +567,18 @@ function bindEvents() {
     btn.addEventListener('click', () => switchView(btn.dataset.view));
   });
 
-  // 空状态中的"开始写日记"按钮
+  // 空状态按钮委托
   document.addEventListener('click', e => {
     if (e.target.dataset.view) switchView(e.target.dataset.view);
   });
 
-  // 标题输入 — 字数计数 + 倾听动画
+  // 标题输入
   dom.diaryTitle.addEventListener('input', onTitleInput);
 
-  // 内容输入 — 倾听动画（debounced）
+  // 内容输入（debounced listening animation）
   dom.diaryContent.addEventListener('input', onContentTyping);
 
-  // 保存按钮 + Ctrl/Cmd+S
+  // 保存 + Ctrl/Cmd+S
   dom.btnSave.addEventListener('click', onSave);
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -628,18 +587,18 @@ function bindEvents() {
     }
   });
 
-  // 清空按钮
+  // 清空
   dom.btnClear.addEventListener('click', () => {
     clearEditor();
     showBubble('喵～重新开始写吧！', 2500);
   });
 
-  // 搜索输入
+  // 搜索
   dom.searchInput.addEventListener('input', () => {
     renderList();
   });
 
-  // 日记列表事件委托 — 查看 / 删除按钮
+  // 日记列表事件委托
   dom.diaryList.addEventListener('click', e => {
     const viewBtn = e.target.closest('[data-action="view"]');
     const deleteBtn = e.target.closest('[data-action="delete"]');
@@ -653,7 +612,7 @@ function bindEvents() {
     }
   });
 
-  // 模态框关闭 — 关闭按钮 + 点击半透明背景
+  // 模态框关闭
   dom.modalClose.addEventListener('click', closeModal);
   dom.diaryModal.addEventListener('click', e => {
     if (e.target === dom.diaryModal) closeModal();
@@ -666,7 +625,7 @@ function bindEvents() {
     if (e.target === dom.confirmDialog) cancelDelete();
   });
 
-  // Escape 快捷键
+  // Escape
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeModal();
@@ -682,19 +641,12 @@ function bindEvents() {
    19. INITIALIZATION
    ========================================================= */
 function init() {
-  // 从 localStorage 加载已保存的日记
   state.diaries = loadDiaries();
-
-  // 初始化今天日期显示
   initEditorDate();
-
-  // 绘制猫咪
   renderCat('idle');
-
-  // 绑定所有事件
   bindEvents();
 
-  // 欢迎气泡 — 根据时间选择问候语
+  // Time-based greeting
   const hour = new Date().getHours();
   let greeting;
   if (hour < 6)        greeting = '深夜还不睡吗？喵～';
@@ -703,11 +655,7 @@ function init() {
   else                 greeting = '晚上好喵～辛苦了今天！';
 
   setTimeout(() => showBubble(greeting, 4000), 800);
-
-  // 启动周期性闲聊
   startIdleMessages();
-
-  // 初始聚焦到标题输入框
   dom.diaryTitle.focus();
 }
 

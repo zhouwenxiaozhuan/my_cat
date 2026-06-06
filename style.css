@@ -38,12 +38,14 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
   font-size: 16px;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
 }
 
 body {
@@ -56,6 +58,7 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 button {
@@ -64,13 +67,19 @@ button {
   border: none;
   background: none;
   line-height: 1.4;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
 }
 
 input, textarea, select {
   font-family: var(--font-sans);
-  font-size: 1rem;
+  font-size: 16px; /* Prevent iOS auto-zoom on focus */
   color: var(--text);
   outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 0; /* Normalize iOS */
 }
 
 #app {
@@ -172,10 +181,6 @@ input, textarea, select {
 }
 
 /* ===== EDITOR SECTION ===== */
-.editor-wrap {
-  /* container for editor layout */
-}
-
 .editor-card {
   background: var(--card);
   border-radius: var(--radius-lg);
@@ -185,10 +190,6 @@ input, textarea, select {
   flex-direction: column;
   gap: 28px;
   transition: box-shadow var(--transition-slow);
-}
-
-.editor-card:hover {
-  box-shadow: var(--card-shadow-hover);
 }
 
 .editor-header {
@@ -276,6 +277,7 @@ input, textarea, select {
   background: var(--neutral-100);
   transition: all var(--transition-slow);
   min-height: 240px;
+  resize: vertical;
 }
 
 .diary-content-input::placeholder {
@@ -310,6 +312,9 @@ input, textarea, select {
   transition: transform var(--transition), box-shadow var(--transition-slow), background var(--transition);
   position: relative;
   overflow: hidden;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .btn::before {
@@ -393,7 +398,6 @@ input, textarea, select {
   gap: 20px;
 }
 
-/* List header with title and count */
 .list-header {
   display: flex;
   align-items: baseline;
@@ -473,6 +477,7 @@ input, textarea, select {
   transition: all var(--transition-slow);
   border-left: 3px solid transparent;
   animation: entryIn 0.3s ease;
+  will-change: transform, opacity;
 }
 
 @keyframes entryIn {
@@ -559,7 +564,9 @@ input, textarea, select {
   font-weight: 500;
   background: var(--main);
   color: white;
+  border: none;
   transition: background var(--transition), transform var(--transition);
+  touch-action: manipulation;
 }
 
 .btn-view:hover {
@@ -579,6 +586,7 @@ input, textarea, select {
   color: var(--error);
   border: 1px solid rgba(232, 124, 124, 0.25);
   transition: background var(--transition), color var(--transition), transform var(--transition);
+  touch-action: manipulation;
 }
 
 .btn-delete:hover {
@@ -640,6 +648,7 @@ input, textarea, select {
   width: 120px;
   height: 120px;
   animation: catFloat 3s ease-in-out infinite;
+  will-change: transform;
 }
 
 .cat-svg-container {
@@ -647,6 +656,7 @@ input, textarea, select {
   height: 100%;
   pointer-events: none;
   user-select: none;
+  -webkit-user-select: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -663,8 +673,8 @@ input, textarea, select {
 
 /* Floating idle animation */
 @keyframes catFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+  0%, 100% { transform: translateY(0px) translateZ(0); }
+  50% { transform: translateY(-8px) translateZ(0); }
 }
 
 /* Happy animation state */
@@ -673,9 +683,9 @@ input, textarea, select {
 }
 
 @keyframes catBounce {
-  0%, 100% { transform: scale(1) translateY(0); }
-  25% { transform: scale(1.05) translateY(-12px); }
-  75% { transform: scale(0.95) translateY(4px); }
+  0%, 100% { transform: scale(1) translateY(0) translateZ(0); }
+  25% { transform: scale(1.05) translateY(-12px) translateZ(0); }
+  75% { transform: scale(0.95) translateY(4px) translateZ(0); }
 }
 
 /* Sad animation state */
@@ -684,9 +694,9 @@ input, textarea, select {
 }
 
 @keyframes catSlump {
-  0% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-4px) rotate(-2deg); }
-  100% { transform: translateY(2px) rotate(0deg); }
+  0% { transform: translateY(0) rotate(0deg) translateZ(0); }
+  50% { transform: translateY(-4px) rotate(-2deg) translateZ(0); }
+  100% { transform: translateY(2px) rotate(0deg) translateZ(0); }
 }
 
 /* Listening animation state */
@@ -695,9 +705,9 @@ input, textarea, select {
 }
 
 @keyframes catListen {
-  0%, 100% { transform: translateY(0); }
-  25% { transform: translateY(-6px); }
-  75% { transform: translateY(0); }
+  0%, 100% { transform: translateY(0) translateZ(0); }
+  25% { transform: translateY(-6px) translateZ(0); }
+  75% { transform: translateY(0) translateZ(0); }
 }
 
 .cat-interact-btn {
@@ -721,7 +731,6 @@ input, textarea, select {
 }
 
 /* ===== SPEECH BUBBLE ===== */
-/* ===== SPEECH BUBBLE ===== */
 #bubble {
   position: fixed;
   bottom: 155px;
@@ -729,11 +738,11 @@ input, textarea, select {
   z-index: 20;
   max-width: 210px;
   pointer-events: none;
-  /* transition-based visibility — never use [hidden] for this element */
   opacity: 0;
   transform: scale(0.75) translateY(10px);
   transform-origin: bottom right;
   transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform, opacity;
 }
 
 #bubble.bubble-visible {
@@ -787,6 +796,7 @@ input, textarea, select {
   z-index: 100;
   background: rgba(50, 40, 30, 0.4);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -809,6 +819,7 @@ input, textarea, select {
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
   animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes modalIn {
@@ -861,14 +872,8 @@ input, textarea, select {
   color: var(--text);
   white-space: pre-wrap;
   word-wrap: break-word;
+  overflow-wrap: break-word;
   margin-bottom: 24px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 16px;
-  border-top: 1px solid var(--neutral-200);
 }
 
 /* Confirm dialog */
@@ -901,19 +906,43 @@ input, textarea, select {
   display: none !important;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 600px) {
+/* ===== RESPONSIVE — Tablet (768px and below) ===== */
+@media (max-width: 768px) {
   .app-main {
-    padding: 20px 16px 120px;
+    padding: 24px 20px 120px;
   }
 
   .editor-card {
-    padding: 20px 16px;
-    border-radius: var(--radius);
+    padding: 28px 24px;
+    gap: 24px;
+  }
+
+  .modal-card {
+    padding: 28px 24px;
+  }
+}
+
+/* ===== RESPONSIVE — Mobile (480px and below) ===== */
+@media (max-width: 480px) {
+  .app-main {
+    padding: 16px 16px 100px;
+    max-width: 100%;
+  }
+
+  .app-header {
+    height: 52px;
   }
 
   .header-inner {
     padding: 0 16px;
+  }
+
+  .logo-icon {
+    font-size: 1.3rem;
+  }
+
+  .logo-text {
+    font-size: 1.1rem;
   }
 
   .nav-label {
@@ -921,22 +950,150 @@ input, textarea, select {
   }
 
   .nav-btn {
-    padding: 8px 14px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .nav-icon {
+    font-size: 1.1rem;
+  }
+
+  .editor-card {
+    padding: 20px 16px;
+    gap: 20px;
+    border-radius: var(--radius);
+  }
+
+  .editor-header {
+    margin-bottom: 0;
+  }
+
+  .date-text {
+    font-size: 0.8rem;
+  }
+
+  .input-label {
+    font-size: 0.75rem;
+  }
+
+  .diary-title-input {
+    padding: 12px 14px;
+    font-size: 1rem;
+  }
+
+  .diary-content-input {
+    padding: 12px 14px;
+    min-height: 180px;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .title-counter {
+    font-size: 0.7rem;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    gap: 6px;
+  }
+
+  .editor-actions {
+    gap: 8px;
+  }
+
+  .list-title {
+    font-size: 1.2rem;
+  }
+
+  .list-count {
+    font-size: 0.8rem;
+  }
+
+  .search-wrap {
+    min-width: 0;
+    padding: 8px 12px;
+  }
+
+  .search-input {
+    font-size: 0.85rem;
+  }
+
+  .diary-entry {
+    padding: 16px;
+  }
+
+  .entry-title {
+    font-size: 0.9rem;
+  }
+
+  .entry-date {
+    font-size: 0.7rem;
+  }
+
+  .entry-preview {
+    font-size: 0.8rem;
+    -webkit-line-clamp: 2;
+    margin-bottom: 10px;
+  }
+
+  .entry-actions {
+    gap: 6px;
+  }
+
+  .btn-view, .btn-delete {
+    padding: 5px 12px;
+    font-size: 0.75rem;
+  }
+
+  .empty-state {
+    padding: 40px 16px;
+  }
+
+  .empty-icon {
+    font-size: 2.5rem;
+  }
+
+  .empty-text {
+    font-size: 0.85rem;
+  }
+
+  /* Modal on mobile — 90% width */
+  .modal-overlay {
+    padding: 16px;
   }
 
   .modal-card {
-    padding: 24px 20px;
+    padding: 20px 16px;
+    max-width: 90%;
+    border-radius: var(--radius);
   }
 
-  #bubble {
-    max-width: 170px;
-    right: 12px;
-    bottom: 140px;
+  .modal-title {
+    font-size: 1.1rem;
   }
 
+  .modal-content {
+    font-size: 0.9rem;
+    line-height: 1.8;
+  }
+
+  .confirm-card {
+    max-width: 90%;
+  }
+
+  .confirm-title {
+    font-size: 1rem;
+  }
+
+  .confirm-text {
+    font-size: 0.85rem;
+  }
+
+  /* Cat on mobile — smaller, less intrusive */
   #cat-animation {
-    bottom: 16px;
-    right: 16px;
+    bottom: 12px;
+    right: 12px;
   }
 
   .cat-wrapper {
@@ -944,8 +1101,93 @@ input, textarea, select {
     height: 80px;
   }
 
-  .cat-svg-container {
-    width: 80px;
-    height: 80px;
+  .cat-svg-container svg {
+    width: 60px;
+    height: 60px;
+  }
+
+  #bubble {
+    max-width: 160px;
+    right: 8px;
+    bottom: 100px;
+  }
+
+  .bubble-content {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .bubble-tail {
+    margin-right: 20px;
+  }
+}
+
+/* ===== RESPONSIVE — Very small (320px) ===== */
+@media (max-width: 360px) {
+  .app-main {
+    padding: 12px 12px 90px;
+  }
+
+  .editor-card {
+    padding: 16px 12px;
+    gap: 16px;
+  }
+
+  .btn {
+    padding: 9px 16px;
+    font-size: 0.8rem;
+  }
+
+  .editor-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .editor-actions .btn {
+    width: 100%;
+  }
+
+  .diary-content-input {
+    min-height: 150px;
+  }
+
+  .cat-wrapper {
+    width: 64px;
+    height: 64px;
+  }
+
+  .cat-svg-container svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  #bubble {
+    max-width: 140px;
+    bottom: 84px;
+    right: 6px;
+  }
+}
+
+/* ===== iOS SAFARI OVERRIDES ===== */
+@supports (-webkit-touch-callout: none) {
+  /* Fix for rubber-band scrolling causing position:fixed flicker */
+  .app-header {
+    position: sticky;
+  }
+
+  /* Ensure smooth animations on iOS */
+  .cat-wrapper,
+  .diary-entry,
+  #bubble,
+  .modal-card {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+
+  /* Prevent input zoom on iOS (backup for meta viewport) */
+  .diary-title-input,
+  .diary-content-input,
+  .search-input {
+    font-size: 16px;
   }
 }
