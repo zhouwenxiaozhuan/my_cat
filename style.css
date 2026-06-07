@@ -79,7 +79,6 @@ input, textarea, select {
   outline: none;
   -webkit-appearance: none;
   appearance: none;
-  border-radius: 0; /* Normalize iOS */
 }
 
 #app {
@@ -906,6 +905,59 @@ input, textarea, select {
   display: none !important;
 }
 
+/* ===== FOOTER ===== */
+.app-footer {
+  background: var(--card);
+  border-top: 1px solid var(--neutral-200);
+  padding: 24px 0;
+  margin-top: auto;
+}
+
+.footer-inner {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.footer-icon {
+  font-size: 1.1rem;
+}
+
+.footer-name {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--main-dark);
+}
+
+.footer-sep {
+  color: var(--neutral-300);
+  font-size: 0.85rem;
+}
+
+.footer-desc {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.footer-meta {
+  font-size: 0.75rem;
+  color: var(--neutral-300);
+  text-align: center;
+}
+
 /* ===== RESPONSIVE — Tablet (768px and below) ===== */
 @media (max-width: 768px) {
   .app-main {
@@ -919,6 +971,10 @@ input, textarea, select {
 
   .modal-card {
     padding: 28px 24px;
+  }
+
+  .footer-inner {
+    padding: 0 20px;
   }
 }
 
@@ -1088,6 +1144,26 @@ input, textarea, select {
 
   .confirm-text {
     font-size: 0.85rem;
+  }
+
+  .footer-inner {
+    padding: 0 16px;
+  }
+
+  .footer-icon {
+    font-size: 1rem;
+  }
+
+  .footer-name {
+    font-size: 0.9rem;
+  }
+
+  .footer-desc {
+    font-size: 0.8rem;
+  }
+
+  .footer-meta {
+    font-size: 0.7rem;
   }
 
   /* Cat on mobile — smaller, less intrusive */
